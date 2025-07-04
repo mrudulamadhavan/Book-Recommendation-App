@@ -1,7 +1,7 @@
-streamlit
-pandas
 numpy
+cython
+pandas
 scikit-learn
-gdown
-scikit-surprise
+streamlit
+scikit-surprise==1.1.3
 
