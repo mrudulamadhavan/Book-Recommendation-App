@@ -11,16 +11,13 @@ from sklearn.metrics.pairwise import linear_kernel
 # 0. Download Dataset from Google Drive if not present
 # ---------------------------
 def download_from_drive(file_id, dest_path):
-    """Download a file from Google Drive."""
     URL = "https://drive.google.com/uc?export=download"
     session = requests.Session()
     response = session.get(URL, params={'id': file_id}, stream=True)
     token = get_confirm_token(response)
-
     if token:
         params = {'id': file_id, 'confirm': token}
         response = session.get(URL, params=params, stream=True)
-
     save_response_content(response, dest_path)
 
 def get_confirm_token(response):
@@ -39,27 +36,18 @@ def save_response_content(response, destination):
 # ---------------------------
 # 1. Download Files if Needed
 # ---------------------------
-# BX-Book-Ratings-Subset.csv https://drive.google.com/file/d/1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF/view?usp=drive_link
-
-# BX-Books.csv https://drive.google.com/file/d/1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ/view?usp=drive_link
-
-# BX-Users.csv https://drive.google.com/file/d/1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ/view?usp=drive_link
-
 os.makedirs("data", exist_ok=True)
 files_to_download = {
-    "data/BX-Books.csv": "1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ",  # Replace with actual file ID
-    "data/BX-Book-Ratings-Subset.csv": "1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF",  # Replace with actual file ID
-    "data/BX-Users.csv": "1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ",  # Replace with actual file ID
-import streamlit as st
-import pandas as pd
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import linear_kernel
-from sklearn.preprocessing import MinMaxScaler
-import os
+    "data/BX-Books.csv": "1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ",
+    "data/BX-Book-Ratings-Subset.csv": "1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF",
+    "data/BX-Users.csv": "1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ"
+}
+for path, fid in files_to_download.items():
+    if not os.path.exists(path):
+        download_from_drive(fid, path)
 
 # ---------------------------
-# 1. Load Data
+# 2. Load and Preprocess Data
 # ---------------------------
 @st.cache_data
 def load_data():
@@ -70,7 +58,6 @@ def load_data():
     books.columns = books.columns.str.strip()
     ratings.columns = ratings.columns.str.strip()
     users.columns = users.columns.str.strip()
-
     return books, ratings, users
 
 def preprocess_ratings(ratings):
@@ -79,7 +66,7 @@ def preprocess_ratings(ratings):
     return ratings
 
 # ---------------------------
-# 2. Recommend Books
+# 3. Recommender Logic
 # ---------------------------
 def content_based(book_title, books_df, top_n=5):
     tfidf = TfidfVectorizer(stop_words='english')
@@ -96,7 +83,7 @@ def content_based(book_title, books_df, top_n=5):
     return books_df.iloc[book_indices]
 
 # ---------------------------
-# 3. Show Book Card
+# 4. Display Helper
 # ---------------------------
 def show_book_tile(column, book):
     with column:
@@ -107,7 +94,7 @@ def show_book_tile(column, book):
         st.caption(book['Book-Title'])
 
 # ---------------------------
-# 4. Streamlit UI
+# 5. Streamlit App UI
 # ---------------------------
 st.set_page_config(page_title="BookSage 📚", layout="wide")
 st.title("📚 BookSage – Your Wise Reading Companion")
@@ -116,27 +103,25 @@ books, ratings, users = load_data()
 ratings = preprocess_ratings(ratings)
 
 # ---------------------------
-# 5. Sidebar Selection
+# 6. Sidebar Input
 # ---------------------------
 st.sidebar.header("📖 Customize Recommendation")
 input_method = st.sidebar.radio("How would you like to start?", ["Favorite Book", "Genre"])
-
 user_input_book = None
-selected_book_title = ""
 
 if input_method == "Favorite Book":
     unique_books = books[['Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher']].drop_duplicates()
-    unique_books['Display'] = unique_books.apply(lambda row: f"{row['Book-Title']} | {row['Book-Author']} | {row['Year-Of-Publication']} | {row['Publisher']}", axis=1)
+    unique_books['Display'] = unique_books.apply(
+        lambda row: f"{row['Book-Title']} | {row['Book-Author']} | {row['Year-Of-Publication']} | {row['Publisher']}",
+        axis=1
+    )
     selected_display = st.sidebar.selectbox("Choose a Book", unique_books['Display'].values)
-
-    # Match back to book
     selected_parts = selected_display.split('|')
     if len(selected_parts) == 4:
         selected_title = selected_parts[0].strip()
         selected_author = selected_parts[1].strip()
         selected_year = selected_parts[2].strip()
         selected_publisher = selected_parts[3].strip()
-
         user_input_book = books[
             (books['Book-Title'] == selected_title) &
             (books['Book-Author'] == selected_author) &
@@ -150,13 +135,12 @@ elif input_method == "Genre":
     genre_books = books[books['Book-Title'].str.contains(selected_genre, case=False, na=False)]
     if not genre_books.empty:
         user_input_book = genre_books.sample(1).iloc[0]
-        selected_title = user_input_book['Book-Title']
     else:
         st.warning("No books found for this genre.")
         st.stop()
 
 # ---------------------------
-# 6. Display Selected Book Info
+# 7. Display Selected Book
 # ---------------------------
 if user_input_book is not None:
     st.subheader("📖 Selected Book Details")
@@ -176,7 +160,7 @@ if user_input_book is not None:
         st.table(details_df)
 
     # ---------------------------
-    # 7. Recommendations
+    # 8. Recommendations
     # ---------------------------
     st.markdown("## 📚 Recommended for You")
     recommendations = content_based(user_input_book['Book-Title'], books, top_n=5)
