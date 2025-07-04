@@ -99,7 +99,6 @@ def recommend(book_name):
 st.title("📖 Book Recommendation System")
 st.markdown("Get similar book suggestions using **Collaborative Filtering** based on user ratings.")
 
-book_list = list(book_pivot.index.values)
 def select_clean_book(book_pivot):
     # Extract original titles from pivot index
     original_titles = pd.Series(book_pivot.index)
@@ -121,8 +120,6 @@ def select_clean_book(book_pivot):
 
     return selected_original
 
-selected_book = st.selectbox("Select a book you like:", book_list)
-# After loading data and creating book_pivot...
 selected_book = select_clean_book(book_pivot)
 st.write(f"You selected: {selected_book}")
 
@@ -144,8 +141,5 @@ if st.button("Recommend"):
         else:
             st.warning("Sorry! Could not find similar books.")
 
-
-
 st.markdown("---")
 st.caption("📚  “Books are a uniquely portable magic.” – Stephen King")
-
