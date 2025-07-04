@@ -1,143 +1,118 @@
+# book_recommender_app.py
+
 import streamlit as st
 import pandas as pd
-import os
-import requests
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import linear_kernel
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
-# ---------------------------
-# 0. Download from Google Drive if Needed
-# ---------------------------
-def download_from_drive(file_id, dest_path):
-    URL = "https://drive.google.com/uc?export=download"
-    session = requests.Session()
-    response = session.get(URL, params={'id': file_id}, stream=True)
-    token = next((v for k, v in response.cookies.items() if k.startswith('download_warning')), None)
-    if token:
-        response = session.get(URL, params={'id': file_id, 'confirm': token}, stream=True)
-    with open(dest_path, "wb") as f:
-        for chunk in response.iter_content(32768):
-            if chunk:
-                f.write(chunk)
+st.set_page_config(page_title="📚 Book Recommender", layout="wide")
 
-os.makedirs("data", exist_ok=True)
-files_to_download = {
-    "data/BX-Books.csv": "1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ",
-    "data/BX-Book-Ratings-Subset.csv": "1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF",
-    "data/BX-Users.csv": "1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ"
-}
-for path, fid in files_to_download.items():
-    if not os.path.exists(path):
-        download_from_drive(fid, path)
 
-# ---------------------------
-# 1. Load and Preprocess Data
-# ---------------------------
 @st.cache_data
 def load_data():
-    books = pd.read_csv("data/BX-Books.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
-    ratings = pd.read_csv("data/BX-Book-Ratings-Subset.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
-    users = pd.read_csv("data/BX-Users.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
-    books.columns = books.columns.str.strip().str.replace('"', '')
-    ratings.columns = ratings.columns.str.strip().str.replace('"', '')
-    users.columns = users.columns.str.strip().str.replace('"', '')
-    return books, ratings, users
+    # Google Drive file IDs
+    file_links = {
+        "Books.csv": "1zsvB70Z9ga_FMEYR2WvIFHWRFSKcuJUF",
+        "Ratings.csv": "1soFmdx-NqJwjWGFfp6xK2-oSTYWPbwnE",
+        "Users.csv": "17ZsHcBCNkLxeeMA0YgJZ6rkOgnCasSXV"
+    }
 
-def preprocess_ratings(ratings):
-    ratings = ratings[ratings['Book-Rating'] > 0]
-    ratings['Book-Rating'] = MinMaxScaler().fit_transform(ratings[['Book-Rating']])
-    return ratings
+    # Download files if not already present
+    for filename, file_id in file_links.items():
+        if not os.path.exists(filename):
+            url = f"https://drive.google.com/uc?id={file_id}"
+            gdown.download(url, filename, quiet=False)
 
-# ---------------------------
-# 2. Content-Based Recommender
-# ---------------------------
-def content_based(book_title, books_df, top_n=5):
-    tfidf = TfidfVectorizer(stop_words='english')
-    books_df['Book-Title'] = books_df['Book-Title'].fillna('')
-    tfidf_matrix = tfidf.fit_transform(books_df['Book-Title'])
-    cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
-    indices = pd.Series(books_df.index, index=books_df['Book-Title']).drop_duplicates()
-    idx = indices.get(book_title)
-    if idx is None: return pd.DataFrame()
-    sim_scores = sorted(list(enumerate(cosine_sim[idx])), key=lambda x: x[1], reverse=True)[1:top_n+1]
-    return books_df.iloc[[i[0] for i in sim_scores]]
+    # Load datasets
+    books = pd.read_csv("Books.csv", encoding='latin-1', on_bad_lines='skip')
+    ratings = pd.read_csv("Ratings.csv", encoding='latin-1', on_bad_lines='skip')
+    users = pd.read_csv("Users.csv", encoding='latin-1', on_bad_lines='skip')
 
-def show_book_tile(column, book):
-    with column:
-        img_url = book.get('Image-URL-M') or "https://via.placeholder.com/128x193.png?text=No+Image"
-        if not isinstance(img_url, str) or not img_url.startswith("http"):
-            img_url = "https://via.placeholder.com/128x193.png?text=No+Image"
-        st.image(img_url, use_column_width=True)
-        st.caption(book['Book-Title'])
+    # Drop missing values in book info
+    books.dropna(inplace=True)
 
-# ---------------------------
-# 3. Streamlit UI
-# ---------------------------
-st.set_page_config(page_title="BookSage 📚", layout="wide")
-st.title("📚 BookSage – Your Wise Reading Companion")
+    # Clean up 'Year-Of-Publication'
+    books = books[books['Year-Of-Publication'].astype(str).str.isnumeric()]
+    books['Year-Of-Publication'] = books['Year-Of-Publication'].astype(int)
+    books = books[
+        (books['Year-Of-Publication'] >= 1900) &
+        (books['Year-Of-Publication'] <= 2023)
+    ]
 
-books, ratings, users = load_data()
-ratings = preprocess_ratings(ratings)
+    # Filter users who rated more than 200 books
+    active_users = ratings['User-ID'].value_counts()
+    active_users = active_users[active_users > 200].index
+    ratings = ratings[ratings['User-ID'].isin(active_users)]
 
-# ---------------------------
-# 4. Sidebar Options
-# ---------------------------
-st.sidebar.header("🔎 Find Books by")
-input_method = st.sidebar.radio("Choose input type", ["Favorite Book", "Genre"])
-user_input_book = None
+    # Merge ratings with books
+    rating_with_books = ratings.merge(books, on='ISBN')
 
-if input_method == "Favorite Book":
-    unique_books = books[['Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher']].drop_duplicates()
-    unique_books['Display'] = unique_books.apply(lambda row: f"{row['Book-Title']} | {row['Book-Author']} | {row['Year-Of-Publication']} | {row['Publisher']}", axis=1)
-    selected_display = st.sidebar.selectbox("Select a Book", unique_books['Display'].values)
-    title, author, year, publisher = [x.strip() for x in selected_display.split('|')]
-    user_input_book = books[
-        (books['Book-Title'] == title) & 
-        (books['Book-Author'] == author) & 
-        (books['Year-Of-Publication'].astype(str) == year) & 
-        (books['Publisher'] == publisher)
-    ].iloc[0]
+    # Filter books with at least 50 ratings
+    book_rating_counts = rating_with_books.groupby('Book-Title')['Book-Rating'].count().reset_index()
+    book_rating_counts.rename(columns={'Book-Rating': 'number_of_ratings'}, inplace=True)
 
-else:
-    genres = ["Fiction", "Fantasy", "Mystery", "History", "Romance", "Science", "Biography"]
-    selected_genre = st.sidebar.selectbox("Choose a Genre", genres)
-    genre_books = books[books['Book-Title'].str.contains(selected_genre, case=False, na=False)]
-    if not genre_books.empty:
-        user_input_book = genre_books.sample(1).iloc[0]
-    else:
-        st.warning("❗ No books found for this genre.")
-        st.stop()
+    final_rating = rating_with_books.merge(book_rating_counts, on='Book-Title')
+    final_rating = final_rating[final_rating['number_of_ratings'] >= 50]
 
-# ---------------------------
-# 5. Book Detail + Recommendations
-# ---------------------------
-if user_input_book is not None:
-    st.subheader("📖 Book Details")
-    col1, col2 = st.columns([1, 3])
-    show_book_tile(col1, user_input_book)
+    # Remove duplicate ratings
+    final_rating.drop_duplicates(['User-ID', 'Book-Title'], inplace=True)
 
-    with col2:
-        st.table(pd.DataFrame({
-            "Field": ["Title", "Author", "Year", "Publisher"],
-            "Value": [
-                user_input_book.get("Book-Title", "N/A"),
-                user_input_book.get("Book-Author", "N/A"),
-                user_input_book.get("Year-Of-Publication", "N/A"),
-                user_input_book.get("Publisher", "N/A"),
-            ]
-        }))
+    # Create pivot table: books as rows, users as columns
+    book_pivot = final_rating.pivot_table(index='Book-Title', columns='User-ID', values='Book-Rating')
+    book_pivot.fillna(0, inplace=True)
 
-    st.markdown("## 📚 Recommended for You")
-    recommendations = content_based(user_input_book['Book-Title'], books, top_n=5)
+    # Compute cosine similarity between books
+    similarity_scores = cosine_similarity(book_pivot)
 
-    if not recommendations.empty:
-        cols = st.columns(len(recommendations))
-        for col, book in zip(cols, recommendations.to_dict(orient='records')):
-            show_book_tile(col, book)
-    else:
-        st.info("No similar books found.")
+    return books, book_pivot, similarity_scores
 
-    st.markdown("---")
-    st.caption("📚 Powered by BookCrossing | “Books are a uniquely portable magic.” – Stephen King")
+
+books, book_pivot, similarity_scores = load_data()
+
+def recommend(book_name):
+    if book_name not in book_pivot.index:
+        return pd.DataFrame()
+
+    index = np.where(book_pivot.index == book_name)[0][0]
+    similar_items = sorted(
+        list(enumerate(similarity_scores[index])),
+        key=lambda x: x[1],
+        reverse=True
+    )[1:6]  # Skip the book itself
+
+    recommendations = []
+    for i in similar_items:
+        temp_df = books[books['Book-Title'] == book_pivot.index[i[0]]].drop_duplicates('Book-Title')
+        if not temp_df.empty:
+            recommendations.append({
+                'Title': temp_df['Book-Title'].values[0],
+                'Author': temp_df['Book-Author'].values[0],
+                'Image_URL': temp_df['Image-URL-M'].values[0],
+                'Similarity Score': round(i[1], 4)
+            })
+
+    return pd.DataFrame(recommendations)
+
+# Streamlit UI
+st.title("📖 Book Recommendation System")
+st.markdown("Get similar book suggestions using **Collaborative Filtering** based on user ratings.")
+
+book_list = list(book_pivot.index.values)
+selected_book = st.selectbox("Select a book you like:", book_list)
+
+if st.button("Recommend"):
+    with st.spinner("Finding books you might enjoy..."):
+        results = recommend(selected_book)
+        if not results.empty:
+            for _, row in results.iterrows():
+                with st.container():
+                    cols = st.columns([1, 4])
+                    cols[0].image(row['Image_URL'], width=100)
+                    cols[1].markdown(f"**{row['Title']}**  \n*by {row['Author']}*  \nSimilarity Score: `{row['Similarity Score']}`")
+        else:
+            st.warning("Sorry! Could not find similar books.")
+
+
+st.markdown("---")
+st.caption("📚  “Books are a uniquely portable magic.” – Stephen King")
 
