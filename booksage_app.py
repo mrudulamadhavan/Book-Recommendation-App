@@ -8,6 +8,22 @@ from sklearn.metrics.pairwise import linear_kernel
 from surprise import SVD, NMF, Dataset, Reader
 from surprise.model_selection import train_test_split
 import random
+import os
+
+!pip install gdown
+
+
+def download_from_drive(file_id, dest_path):
+    import gdown
+    if not os.path.exists(dest_path):
+        url = f"https://drive.google.com/uc?id={file_id}"
+        gdown.download(url, dest_path, quiet=False)
+
+# Download datasets if not present
+os.makedirs("data", exist_ok=True)
+download_from_drive("1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ", "data/BX-Books.csv")
+download_from_drive("1MEY18Hr__QtE_Q-19GHe7G6cZ0ABq7uF", "data/BX-Book-Ratings-Subset.csv")
+download_from_drive("1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ", "data/BX-Users.csv")
 
 st.set_page_config(page_title="BookSage 📚", layout="wide")
 st.title("📚 BookSage – Your Wise Reading Companion")
