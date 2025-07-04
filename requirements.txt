@@ -6,6 +6,7 @@ pandas>=1.5.0
 numpy>=1.23.0
 
 # ML / Recommender models
+sklearn
 scikit-learn>=1.3.0
 scipy>=1.10.0
 
