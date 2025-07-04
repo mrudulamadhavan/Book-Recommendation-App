@@ -1,48 +1,83 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
+import requests
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
 # ---------------------------
-# 0. Load Dataset from Google Drive URLs
+# 0. Download Dataset from Google Drive if not present
+# ---------------------------
+def download_from_drive(file_id, dest_path):
+    """Download a file from Google Drive."""
+    URL = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    save_response_content(response, dest_path)
+
+def get_confirm_token(response):
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            return value
+    return None
+
+def save_response_content(response, destination):
+    CHUNK_SIZE = 32768
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:
+                f.write(chunk)
+
+# ---------------------------
+# 1. Download Files if Needed
+# ---------------------------
+os.makedirs("data", exist_ok=True)
+files_to_download = {
+    "data/BX-Books.csv": "1a2b3c4d5e6f7g8h9i",  # Replace with actual file ID
+    "data/BX-Book-Ratings-Subset.csv": "2z3y4x5w6v7u8t9s0r",  # Replace with actual file ID
+    "data/BX-Users.csv": "3k4l5m6n7o8p9q0r1s",  # Replace with actual file ID
+}
+for path, file_id in files_to_download.items():
+    if not os.path.exists(path):
+        download_from_drive(file_id, path)
+
+# ---------------------------
+# 2. Load & Preprocess Data
 # ---------------------------
 @st.cache_data
 def load_data():
     books = pd.read_csv("data/BX-Books.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
     ratings = pd.read_csv("data/BX-Book-Ratings-Subset.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
     users = pd.read_csv("data/BX-Users.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
-
-    # Standardize column names
+    
     ratings.columns = ratings.columns.str.strip()
     if 'Book-Rating' not in ratings.columns:
         st.error("❌ 'Book-Rating' column not found in ratings dataset. Check the CSV structure.")
         st.stop()
+        
+    ratings = ratings[ratings['Book-Rating'] > 0]
+    ratings['Book-Rating'] = MinMaxScaler().fit_transform(ratings[['Book-Rating']])
     
     return books, ratings, users
 
-
-def preprocess_ratings(ratings):
-    ratings = ratings[ratings['Book-Rating'] > 0]
-    ratings['Book-Rating'] = MinMaxScaler().fit_transform(ratings[['Book-Rating']])
-    return ratings
+books, ratings, users = load_data()
 
 # ---------------------------
-# 1. App Config
+# 3. App Config
 # ---------------------------
 st.set_page_config(page_title="BookSage 📚", layout="wide")
 st.title("📚 BookSage – Your Wise Reading Companion")
 
 # ---------------------------
-# 2. Load and Prepare Data
-# ---------------------------
-books, ratings, users = load_data_from_url()
-ratings.columns = ratings.columns.str.strip()
-ratings = preprocess_ratings(ratings)
-
-# ---------------------------
-# 3. Helper Functions
+# 4. Helper Functions
 # ---------------------------
 def show_tile(column, book):
     with column:
@@ -67,7 +102,7 @@ def content_based(book_title, books_df, top_n=5):
     return books_df.iloc[book_indices]
 
 # ---------------------------
-# 4. Session Init
+# 5. Session Init
 # ---------------------------
 if 'ISBN' not in st.session_state:
     st.session_state['ISBN'] = '0385486804'
@@ -75,7 +110,7 @@ if 'User-ID' not in st.session_state:
     st.session_state['User-ID'] = 98783
 
 # ---------------------------
-# 5. Sidebar
+# 6. Sidebar
 # ---------------------------
 st.sidebar.header("📖 Customize")
 user_id = st.sidebar.number_input("User ID", min_value=1, value=st.session_state['User-ID'])
@@ -97,7 +132,7 @@ else:
         st.stop()
 
 # ---------------------------
-# 6. Book Detail
+# 7. Book Detail
 # ---------------------------
 current_book = books[books['ISBN'] == st.session_state['ISBN']].iloc[0]
 rating_data = ratings[ratings['ISBN'] == st.session_state['ISBN']]
@@ -113,7 +148,7 @@ with col2:
     st.markdown(f"**Average Rating:** {avg_rating:.2f} ⭐" if not pd.isna(avg_rating) else "No ratings yet")
 
 # ---------------------------
-# 7. Content-Based Recommendations
+# 8. Recommendations
 # ---------------------------
 st.subheader("🧾 Content-Based Recommendations")
 cb_recs = content_based(current_book['Book-Title'], books, top_n=5)
@@ -126,3 +161,4 @@ else:
 
 st.markdown("---")
 st.caption("📚 Powered by BookCrossing | “Books are a uniquely portable magic.” – Stephen King")
+
