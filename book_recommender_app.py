@@ -55,10 +55,13 @@ def load_data():
     ratings = pd.read_csv("data/BX-Book-Ratings-Subset.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
     users = pd.read_csv("data/BX-Users.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
 
-    books.columns = books.columns.str.strip()
-    ratings.columns = ratings.columns.str.strip()
-    users.columns = users.columns.str.strip()
+    # Clean column names
+    books.columns = books.columns.str.strip().str.replace('"', '')
+    ratings.columns = ratings.columns.str.strip().str.replace('"', '')
+    users.columns = users.columns.str.strip().str.replace('"', '')
+
     return books, ratings, users
+
 
 def preprocess_ratings(ratings):
     ratings = ratings[ratings['Book-Rating'] > 0]
