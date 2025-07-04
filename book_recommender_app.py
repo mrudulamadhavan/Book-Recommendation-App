@@ -121,7 +121,7 @@ def select_clean_book(book_pivot):
     return selected_original
 
 selected_book = select_clean_book(book_pivot)
-st.write(f"You selected: **{selected_book}**")
+st.write(f"You selected:")
 
 # Show selected book details and image
 selected_book_info = books[books['Book-Title'] == selected_book].drop_duplicates('Book-Title')
