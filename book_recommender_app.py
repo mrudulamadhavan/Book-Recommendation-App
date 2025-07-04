@@ -105,14 +105,21 @@ selected_book = st.selectbox("Select a book you like:", book_list)
 if st.button("Recommend"):
     with st.spinner("Finding books you might enjoy..."):
         results = recommend(selected_book)
+
         if not results.empty:
-            for _, row in results.iterrows():
-                with st.container():
-                    cols = st.columns([1, 4])
-                    cols[0].image(row['Image_URL'], width=100)
-                    cols[1].markdown(f"**{row['Title']}**  \n*by {row['Author']}*  \nSimilarity Score: `{row['Similarity Score']}`")
+            st.subheader("📚 Recommended Books for You")
+
+            # Create columns to layout recommendations as tiles
+            cols = st.columns(len(results))
+
+            for i, row in results.iterrows():
+                with cols[i]:
+                    st.image(row['Image_URL'], use_column_width=True)
+                    st.caption(f"**{row['Title']}**")
+                    st.text(f"by {row['Author']}")
         else:
             st.warning("Sorry! Could not find similar books.")
+
 
 
 st.markdown("---")
