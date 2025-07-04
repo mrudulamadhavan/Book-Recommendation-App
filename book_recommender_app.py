@@ -103,9 +103,7 @@ def recommend(book_name):
 st.write("")
 st.markdown("<h4 style='text-align: center;'> <b>Discover your next favorite read effortlessly!</b></h4>", unsafe_allow_html=True)
 st.write("")
-st.write("""Our Book Recommendation System leverages the power to connect you with personalized book suggestions based on real user tastes and reading habits.  
-Dive into a world of stories tailored just for you — because the best books are the ones you haven’t read yet!
-""")
+st.write("""Dive into a world of stories tailored just for you — because the best books are the ones you haven’t read yet!""")
 
 
 book_list = list(book_pivot.index)
