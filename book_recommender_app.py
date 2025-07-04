@@ -137,7 +137,8 @@ if not selected_book_info.empty:
 
     cols = st.columns([1, 3])
     with cols[0]:
-        st.image(book_img, use_container_width=True)
+        st.image(row['Image_URL'], width=120)
+
     with cols[1]:
         st.markdown(f"### {selected_book}")
         st.markdown(f"**Author:** {book_author}")
