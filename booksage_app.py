@@ -46,7 +46,7 @@ def preprocess_ratings(ratings):
     ratings['Book-Rating'] = MinMaxScaler().fit_transform(ratings[['Book-Rating']])
     return ratings
 
-books, ratings, users = load_data()
+books, ratings, users = load_data_from_url()
 ratings = preprocess_ratings(ratings)
 
 # ---------------------------
