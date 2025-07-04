@@ -7,7 +7,7 @@ import numpy as np
 import gdown
 from sklearn.metrics.pairwise import cosine_similarity
 
-st.set_page_config(page_title="📚 BookSage – Your Book Recommending Partner", layout="wide")
+# st.set_page_config(page_title="📚 BookSage – Your Book Recommending Partner", layout="wide")
 # st.title("📚 **BookSage – Your Book Recommending Partner**")
 st.markdown("<h1 style='text-align: center;'>📚 <b>BookSage – Your Book Recommending Partner</b></h1>", unsafe_allow_html=True)
 
