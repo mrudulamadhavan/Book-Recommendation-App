@@ -1,6 +1,4 @@
-# Book-Recommendation-App
 
-readme_text = """
 # 📚 Book Recommendation System
 
 ## Overview
