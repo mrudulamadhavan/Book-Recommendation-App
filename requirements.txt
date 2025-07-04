@@ -1,7 +1,7 @@
 numpy
-cython
 pandas
+matplotlib
 scikit-learn
 streamlit
-scikit-surprise==1.1.3
+
 
