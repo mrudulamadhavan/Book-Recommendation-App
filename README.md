@@ -49,4 +49,7 @@ Collaborative filtering using a pivot table (books x users) and cosine similarit
 > “Books are a uniquely portable magic.” – Stephen King
 
 
+### **Streamlit Link: ** https://recommendbookapp.streamlit.app/
+
+
 
