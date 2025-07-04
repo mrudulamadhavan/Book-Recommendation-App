@@ -9,16 +9,19 @@ from sklearn.metrics.pairwise import linear_kernel
 # 0. Load Dataset from Google Drive URLs
 # ---------------------------
 @st.cache_data
-def load_data_from_url():
-    books_url = "https://drive.google.com/uc?export=download&id=1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ"
-    ratings_url = "https://drive.google.com/uc?export=download&id=1MEY18Hr__QtE_Q-19GHe7G6cZ0ABq7uF"
-    users_url = "https://drive.google.com/uc?export=download&id=1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ"
+def load_data():
+    books = pd.read_csv("data/BX-Books.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
+    ratings = pd.read_csv("data/BX-Book-Ratings-Subset.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
+    users = pd.read_csv("data/BX-Users.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
 
-    books = pd.read_csv(books_url, sep=';', encoding='latin-1', on_bad_lines='skip')
-    ratings = pd.read_csv(ratings_url, sep=';', encoding='latin-1', on_bad_lines='skip')
-    users = pd.read_csv(users_url, sep=';', encoding='latin-1', on_bad_lines='skip')
-
+    # Standardize column names
+    ratings.columns = ratings.columns.str.strip()
+    if 'Book-Rating' not in ratings.columns:
+        st.error("❌ 'Book-Rating' column not found in ratings dataset. Check the CSV structure.")
+        st.stop()
+    
     return books, ratings, users
+
 
 def preprocess_ratings(ratings):
     ratings = ratings[ratings['Book-Rating'] > 0]
@@ -35,6 +38,7 @@ st.title("📚 BookSage – Your Wise Reading Companion")
 # 2. Load and Prepare Data
 # ---------------------------
 books, ratings, users = load_data_from_url()
+ratings.columns = ratings.columns.str.strip()
 ratings = preprocess_ratings(ratings)
 
 # ---------------------------
