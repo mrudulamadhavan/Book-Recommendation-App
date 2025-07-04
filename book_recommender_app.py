@@ -50,49 +50,37 @@ files_to_download = {
     "data/BX-Books.csv": "1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ",  # Replace with actual file ID
     "data/BX-Book-Ratings-Subset.csv": "1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF",  # Replace with actual file ID
     "data/BX-Users.csv": "1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ",  # Replace with actual file ID
-}
-for path, file_id in files_to_download.items():
-    if not os.path.exists(path):
-        download_from_drive(file_id, path)
+import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+from sklearn.preprocessing import MinMaxScaler
+import os
 
 # ---------------------------
-# 2. Load & Preprocess Data
+# 1. Load Data
 # ---------------------------
 @st.cache_data
 def load_data():
     books = pd.read_csv("data/BX-Books.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
     ratings = pd.read_csv("data/BX-Book-Ratings-Subset.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
     users = pd.read_csv("data/BX-Users.csv", sep=';', encoding='latin-1', on_bad_lines='skip')
-    
+
+    books.columns = books.columns.str.strip()
     ratings.columns = ratings.columns.str.strip()
-    if 'Book-Rating' not in ratings.columns:
-        st.error("❌ 'Book-Rating' column not found in ratings dataset. Check the CSV structure.")
-        st.stop()
-        
-    ratings = ratings[ratings['Book-Rating'] > 0]
-    ratings['Book-Rating'] = MinMaxScaler().fit_transform(ratings[['Book-Rating']])
-    
+    users.columns = users.columns.str.strip()
+
     return books, ratings, users
 
-books, ratings, users = load_data()
+def preprocess_ratings(ratings):
+    ratings = ratings[ratings['Book-Rating'] > 0]
+    ratings['Book-Rating'] = MinMaxScaler().fit_transform(ratings[['Book-Rating']])
+    return ratings
 
 # ---------------------------
-# 3. App Config
+# 2. Recommend Books
 # ---------------------------
-st.set_page_config(page_title="BookSage 📚", layout="wide")
-st.title("📚 BookSage – Your Wise Reading Companion")
-
-# ---------------------------
-# 4. Helper Functions
-# ---------------------------
-def show_tile(column, book):
-    with column:
-        img_url = book.get('Image-URL-M') or "https://via.placeholder.com/128x193.png?text=No+Image"
-        if not isinstance(img_url, str) or not img_url.startswith("http"):
-            img_url = "https://via.placeholder.com/128x193.png?text=No+Image"
-        st.image(img_url, use_column_width=True)
-        st.caption(book['Book-Title'])
-
 def content_based(book_title, books_df, top_n=5):
     tfidf = TfidfVectorizer(stop_words='english')
     books_df['Book-Title'] = books_df['Book-Title'].fillna('')
@@ -108,63 +96,98 @@ def content_based(book_title, books_df, top_n=5):
     return books_df.iloc[book_indices]
 
 # ---------------------------
-# 5. Session Init
+# 3. Show Book Card
 # ---------------------------
-if 'ISBN' not in st.session_state:
-    st.session_state['ISBN'] = '0385486804'
-if 'User-ID' not in st.session_state:
-    st.session_state['User-ID'] = 98783
+def show_book_tile(column, book):
+    with column:
+        img_url = book.get('Image-URL-M') or "https://via.placeholder.com/128x193.png?text=No+Image"
+        if not isinstance(img_url, str) or not img_url.startswith("http"):
+            img_url = "https://via.placeholder.com/128x193.png?text=No+Image"
+        st.image(img_url, use_column_width=True)
+        st.caption(book['Book-Title'])
 
 # ---------------------------
-# 6. Sidebar
+# 4. Streamlit UI
 # ---------------------------
-st.sidebar.header("📖 Customize")
-user_id = st.sidebar.number_input("User ID", min_value=1, value=st.session_state['User-ID'])
-st.session_state['User-ID'] = user_id
-start_method = st.sidebar.radio("Start with:", ["Favorite Book", "Genre"])
+st.set_page_config(page_title="BookSage 📚", layout="wide")
+st.title("📚 BookSage – Your Wise Reading Companion")
 
-if start_method == "Favorite Book":
-    fav_book = st.sidebar.selectbox("Choose a Book", books['Book-Title'].dropna().unique())
-    selected_isbn = books[books['Book-Title'] == fav_book]['ISBN'].values[0]
-    st.session_state['ISBN'] = selected_isbn
-else:
+books, ratings, users = load_data()
+ratings = preprocess_ratings(ratings)
+
+# ---------------------------
+# 5. Sidebar Selection
+# ---------------------------
+st.sidebar.header("📖 Customize Recommendation")
+input_method = st.sidebar.radio("How would you like to start?", ["Favorite Book", "Genre"])
+
+user_input_book = None
+selected_book_title = ""
+
+if input_method == "Favorite Book":
+    unique_books = books[['Book-Title', 'Book-Author', 'Year-Of-Publication', 'Publisher']].drop_duplicates()
+    unique_books['Display'] = unique_books.apply(lambda row: f"{row['Book-Title']} | {row['Book-Author']} | {row['Year-Of-Publication']} | {row['Publisher']}", axis=1)
+    selected_display = st.sidebar.selectbox("Choose a Book", unique_books['Display'].values)
+
+    # Match back to book
+    selected_parts = selected_display.split('|')
+    if len(selected_parts) == 4:
+        selected_title = selected_parts[0].strip()
+        selected_author = selected_parts[1].strip()
+        selected_year = selected_parts[2].strip()
+        selected_publisher = selected_parts[3].strip()
+
+        user_input_book = books[
+            (books['Book-Title'] == selected_title) &
+            (books['Book-Author'] == selected_author) &
+            (books['Year-Of-Publication'].astype(str) == selected_year) &
+            (books['Publisher'] == selected_publisher)
+        ].iloc[0]
+
+elif input_method == "Genre":
     genres = ["Fiction", "Fantasy", "Mystery", "History", "Romance", "Science", "Biography"]
     selected_genre = st.sidebar.selectbox("Pick a Genre", genres)
     genre_books = books[books['Book-Title'].str.contains(selected_genre, case=False, na=False)]
     if not genre_books.empty:
-        st.session_state['ISBN'] = genre_books.sample(1).iloc[0]['ISBN']
+        user_input_book = genre_books.sample(1).iloc[0]
+        selected_title = user_input_book['Book-Title']
     else:
         st.warning("No books found for this genre.")
         st.stop()
 
 # ---------------------------
-# 7. Book Detail
+# 6. Display Selected Book Info
 # ---------------------------
-current_book = books[books['ISBN'] == st.session_state['ISBN']].iloc[0]
-rating_data = ratings[ratings['ISBN'] == st.session_state['ISBN']]
-avg_rating = rating_data['Book-Rating'].mean()
+if user_input_book is not None:
+    st.subheader("📖 Selected Book Details")
+    col1, col2 = st.columns([1, 3])
+    show_book_tile(col1, user_input_book)
 
-col1, col2 = st.columns([1, 3])
-with col1:
-    st.image(current_book['Image-URL-L'], use_column_width=True)
-with col2:
-    st.subheader(current_book['Book-Title'])
-    st.markdown(f"**Author:** {current_book['Book-Author']}")
-    st.markdown(f"**Publisher:** {current_book['Publisher']} ({current_book['Year-Of-Publication']})")
-    st.markdown(f"**Average Rating:** {avg_rating:.2f} ⭐" if not pd.isna(avg_rating) else "No ratings yet")
+    with col2:
+        details_df = pd.DataFrame({
+            "Field": ["Title", "Author", "Year", "Publisher"],
+            "Value": [
+                user_input_book.get("Book-Title", "N/A"),
+                user_input_book.get("Book-Author", "N/A"),
+                user_input_book.get("Year-Of-Publication", "N/A"),
+                user_input_book.get("Publisher", "N/A"),
+            ]
+        })
+        st.table(details_df)
 
-# ---------------------------
-# 8. Recommendations
-# ---------------------------
-st.subheader("🧾 Content-Based Recommendations")
-cb_recs = content_based(current_book['Book-Title'], books, top_n=5)
-if not cb_recs.empty:
-    cols = st.columns(len(cb_recs))
-    for col, book in zip(cols, cb_recs.to_dict(orient='records')):
-        show_tile(col, book)
-else:
-    st.info("No similar books found.")
+    # ---------------------------
+    # 7. Recommendations
+    # ---------------------------
+    st.markdown("## 📚 Recommended for You")
+    recommendations = content_based(user_input_book['Book-Title'], books, top_n=5)
 
-st.markdown("---")
-st.caption("📚 Powered by BookCrossing | “Books are a uniquely portable magic.” – Stephen King")
+    if not recommendations.empty:
+        cols = st.columns(len(recommendations))
+        for col, book in zip(cols, recommendations.to_dict(orient='records')):
+            show_book_tile(col, book)
+    else:
+        st.info("No similar books found.")
+
+    st.markdown("---")
+    st.caption("📚 Powered by BookCrossing | “Books are a uniquely portable magic.” – Stephen King")
 
