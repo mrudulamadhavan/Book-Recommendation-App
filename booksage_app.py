@@ -10,7 +10,6 @@ from surprise.model_selection import train_test_split
 import random
 import os
 
-!pip install gdown
 
 
 def download_from_drive(file_id, dest_path):
