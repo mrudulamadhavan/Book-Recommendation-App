@@ -99,7 +99,7 @@ def recommend(book_name):
     return pd.DataFrame(recommendations)
 
 # Streamlit UI
-st.title("📖 Book Recommendation System")
+# st.title("📖 Book Recommendation System")
 st.markdown("""
 **Discover your next favorite read effortlessly! 📚**  
 Our Book Recommendation System leverages the power to connect you with personalized book suggestions based on real user tastes and reading habits.  
