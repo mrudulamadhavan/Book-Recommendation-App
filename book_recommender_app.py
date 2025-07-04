@@ -121,7 +121,23 @@ def select_clean_book(book_pivot):
     return selected_original
 
 selected_book = select_clean_book(book_pivot)
-st.write(f"You selected: {selected_book}")
+st.write(f"You selected: **{selected_book}**")
+
+# Show selected book details and image
+selected_book_info = books[books['Book-Title'] == selected_book].drop_duplicates('Book-Title')
+
+if not selected_book_info.empty:
+    book_img = selected_book_info['Image-URL-M'].values[0]
+    book_author = selected_book_info['Book-Author'].values[0]
+    book_year = selected_book_info['Year-Of-Publication'].values[0]
+
+    cols = st.columns([1, 3])
+    with cols[0]:
+        st.image(book_img, use_container_width=True)
+    with cols[1]:
+        st.markdown(f"### {selected_book}")
+        st.markdown(f"**Author:** {book_author}")
+        st.markdown(f"**Year of Publication:** {book_year}")
 
 if st.button("Recommend"):
     with st.spinner("Finding books you might enjoy..."):
