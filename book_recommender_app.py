@@ -102,8 +102,6 @@ def recommend(book_name):
 # st.title("📖 Book Recommendation System")
 st.write("")
 st.markdown("<h4 style='text-align: center;'> <b>Discover your next favorite read effortlessly!</b></h4>", unsafe_allow_html=True)
-st.write("")
-st.write("""Dive into a world of stories tailored just for you — because the best books are the ones you haven’t read yet!""")
 
 
 book_list = list(book_pivot.index)
