@@ -97,7 +97,11 @@ def recommend(book_name):
 
 # Streamlit UI
 st.title("📖 Book Recommendation System")
-st.markdown("Get similar book suggestions using **Collaborative Filtering** based on user ratings.")
+st.markdown("""
+**Discover your next favorite read effortlessly! 📚**  
+Our Book Recommendation System leverages the power to connect you with personalized book suggestions based on real user tastes and reading habits.  
+Dive into a world of stories tailored just for you — because the best books are the ones you haven’t read yet!
+""")
 
 def select_clean_book(book_pivot):
     # Extract original titles from pivot index
