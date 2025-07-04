@@ -14,16 +14,16 @@ import os
 # ---------------------------
 # 0. Download Dataset from Google Drive if not present
 # ---------------------------
-def download_from_drive(file_id, dest_path):
-    import gdown
-    if not os.path.exists(dest_path):
-        url = f"https://drive.google.com/uc?id={file_id}"
-        gdown.download(url, dest_path, quiet=False)
-
-os.makedirs("data", exist_ok=True)
-download_from_drive("1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ", "data/BX-Books.csv")
-download_from_drive("1MEY18Hr__QtE_Q-19GHe7G6cZ0ABq7uF", "data/BX-Book-Ratings-Subset.csv")
-download_from_drive("1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ", "data/BX-Users.csv")
+def load_data_from_url():
+    books_url = "https://drive.google.com/uc?export=download&id=1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ"
+    ratings_url = "https://drive.google.com/uc?export=download&id=1MEY18Hr__QtE_Q-19GHe7G6cZ0ABq7uF"
+    users_url = "https://drive.google.com/uc?export=download&id=1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ"
+    
+    books = pd.read_csv(books_url, sep=';', encoding='latin-1', on_bad_lines='skip')
+    ratings = pd.read_csv(ratings_url, sep=';', encoding='latin-1', on_bad_lines='skip')
+    users = pd.read_csv(users_url, sep=';', encoding='latin-1', on_bad_lines='skip')
+    
+    return books, ratings, users
 
 # ---------------------------
 # 1. App Config
