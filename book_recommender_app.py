@@ -39,11 +39,17 @@ def save_response_content(response, destination):
 # ---------------------------
 # 1. Download Files if Needed
 # ---------------------------
+# BX-Book-Ratings-Subset.csv https://drive.google.com/file/d/1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF/view?usp=drive_link
+
+# BX-Books.csv https://drive.google.com/file/d/1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ/view?usp=drive_link
+
+# BX-Users.csv https://drive.google.com/file/d/1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ/view?usp=drive_link
+
 os.makedirs("data", exist_ok=True)
 files_to_download = {
-    "data/BX-Books.csv": "1a2b3c4d5e6f7g8h9i",  # Replace with actual file ID
-    "data/BX-Book-Ratings-Subset.csv": "2z3y4x5w6v7u8t9s0r",  # Replace with actual file ID
-    "data/BX-Users.csv": "3k4l5m6n7o8p9q0r1s",  # Replace with actual file ID
+    "data/BX-Books.csv": "1t-MhJvHceB2brCMinMer-A3HhiUvw8xJ",  # Replace with actual file ID
+    "data/BX-Book-Ratings-Subset.csv": "1TjSUSrNQD2rtpIa3MBqvQnwjVFeOgDMF",  # Replace with actual file ID
+    "data/BX-Users.csv": "1pm_oV9kIKqKrDelP1KA-eQ4oRp6rz7mJ",  # Replace with actual file ID
 }
 for path, file_id in files_to_download.items():
     if not os.path.exists(path):
