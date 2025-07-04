@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # st.set_page_config(page_title="📚 BookSage – Your Book Recommending Partner", layout="wide")
 # st.title("📚 **BookSage – Your Book Recommending Partner**")
-st.markdown("<h3 style='text-align: center;'>📚 <b>BookSage – Your Book Recommending Partner</b></h3> 📚", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center;'>📚 <b>BookSage – Your Book Recommending Partner  📚</b></h3>", unsafe_allow_html=True)
 
 
 
