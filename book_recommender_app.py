@@ -114,7 +114,7 @@ if st.button("Recommend"):
 
             for i, row in results.iterrows():
                 with cols[i]:
-                    st.image(row['Image_URL'], use_column_width=True)
+                    st.image(row['Image_URL'], use_container_width=True)
                     st.caption(f"**{row['Title']}**")
                     st.text(f"by {row['Author']}")
         else:
