@@ -48,10 +48,5 @@ Collaborative filtering using a pivot table (books x users) and cosine similarit
 ## Quotes & UX
 > “Books are a uniquely portable magic.” – Stephen King
 
----
-Created with ❤️ using Python & Streamlit.
-"""
 
-with open("README.md", "w", encoding="utf-8") as f:
-    f.write(readme_text)
 
