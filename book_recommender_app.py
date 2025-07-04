@@ -165,5 +165,4 @@ if st.button("Recommend"):
 st.markdown("---")
 st.caption("📚  “Books are a uniquely portable magic.” – Stephen King")
 
-if st.button("Reload"):
-    st.experimental_rerun()
+
