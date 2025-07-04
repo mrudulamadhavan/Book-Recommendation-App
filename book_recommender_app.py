@@ -3,10 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.metrics.pairwise import linear_kernel
-from surprise import SVD, NMF, Dataset, Reader
-from surprise.model_selection import train_test_split
 
 # ---------------------------
 # 0. Load Dataset from Google Drive URLs
@@ -20,7 +17,7 @@ def load_data_from_url():
     books = pd.read_csv(books_url, sep=';', encoding='latin-1', on_bad_lines='skip')
     ratings = pd.read_csv(ratings_url, sep=';', encoding='latin-1', on_bad_lines='skip')
     users = pd.read_csv(users_url, sep=';', encoding='latin-1', on_bad_lines='skip')
-    
+
     return books, ratings, users
 
 def preprocess_ratings(ratings):
@@ -64,29 +61,6 @@ def content_based(book_title, books_df, top_n=5):
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:top_n+1]
     book_indices = [i[0] for i in sim_scores]
     return books_df.iloc[book_indices]
-
-@st.cache_resource
-def train_model(model_type="svd", sample_size=10000):
-    reader = Reader(rating_scale=(0, 1))
-    sample = ratings.sample(sample_size)
-    data = Dataset.load_from_df(sample[['User-ID', 'ISBN', 'Book-Rating']], reader)
-    trainset, testset = train_test_split(data, test_size=0.2)
-    model = SVD() if model_type == "svd" else NMF()
-    model.fit(trainset)
-    predictions = model.test(testset)
-    rmse = np.sqrt(mean_squared_error([pred.r_ui for pred in predictions], [pred.est for pred in predictions]))
-    mae = mean_absolute_error([pred.r_ui for pred in predictions], [pred.est for pred in predictions])
-    return model, rmse, mae
-
-def get_user_recommendations(model, user_id, books, ratings, top_n=5):
-    read_books = ratings[ratings['User-ID'] == user_id]['ISBN']
-    unread_books = books[~books['ISBN'].isin(read_books)]
-    predictions = [
-        (isbn, model.predict(user_id, isbn).est)
-        for isbn in unread_books['ISBN'].unique()[:500]  # limit for performance
-    ]
-    top_isbns = sorted(predictions, key=lambda x: x[1], reverse=True)[:top_n]
-    return books[books['ISBN'].isin([isbn for isbn, _ in top_isbns])]
 
 # ---------------------------
 # 4. Session Init
@@ -135,27 +109,16 @@ with col2:
     st.markdown(f"**Average Rating:** {avg_rating:.2f} ⭐" if not pd.isna(avg_rating) else "No ratings yet")
 
 # ---------------------------
-# 7. Recommendations
+# 7. Content-Based Recommendations
 # ---------------------------
-st.subheader("🎯 Your High Rated Books")
-high_rated_books = ratings[(ratings['User-ID'] == user_id) & (ratings['Book-Rating'] > 0.8)]
-top_books = books[books['ISBN'].isin(high_rated_books['ISBN'])].drop_duplicates('Book-Title').head(5)
-cols = st.columns(len(top_books)) if not top_books.empty else []
-for col, book in zip(cols, top_books.to_dict(orient='records')):
-    show_tile(col, book)
-
-st.subheader("🧠 Personalized Recommendations")
-model_svd, _, _ = train_model("svd")
-user_recs = get_user_recommendations(model_svd, user_id, books, ratings)
-cols = st.columns(len(user_recs))
-for col, book in zip(cols, user_recs.to_dict(orient='records')):
-    show_tile(col, book)
-
-st.subheader("🧾 Content-Based Suggestions")
+st.subheader("🧾 Content-Based Recommendations")
 cb_recs = content_based(current_book['Book-Title'], books, top_n=5)
-cols = st.columns(len(cb_recs))
-for col, book in zip(cols, cb_recs.to_dict(orient='records')):
-    show_tile(col, book)
+if not cb_recs.empty:
+    cols = st.columns(len(cb_recs))
+    for col, book in zip(cols, cb_recs.to_dict(orient='records')):
+        show_tile(col, book)
+else:
+    st.info("No similar books found.")
 
 st.markdown("---")
 st.caption("📚 Powered by BookCrossing | “Books are a uniquely portable magic.” – Stephen King")
