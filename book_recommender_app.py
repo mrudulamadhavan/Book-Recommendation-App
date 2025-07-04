@@ -103,28 +103,9 @@ Our Book Recommendation System leverages the power to connect you with personali
 Dive into a world of stories tailored just for you — because the best books are the ones you haven’t read yet!
 """)
 
-def select_clean_book(book_pivot):
-    # Extract original titles from pivot index
-    original_titles = pd.Series(book_pivot.index)
 
-    # Normalize titles: strip whitespace and lowercase
-    normalized_titles = original_titles.str.strip().str.lower()
-
-    # Create mapping normalized_title -> original_title
-    book_map = dict(zip(normalized_titles, original_titles))
-
-    # Unique sorted normalized titles for display
-    book_list = sorted(set(normalized_titles))
-
-    # Streamlit selectbox with cleaned titles
-    selected_norm = st.selectbox("Select a book you like:", book_list)
-
-    # Map back to original title
-    selected_original = book_map[selected_norm]
-
-    return selected_original
-
-selected_book = select_clean_book(book_pivot)
+book_list = list(book_pivot.index)
+selected_book = st.selectbox("Select a book you like:", sorted(book_list))
 st.write(f"You selected:")
 
 # Show selected book details and image
