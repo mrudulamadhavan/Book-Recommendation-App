@@ -4,6 +4,7 @@ import os
 import streamlit as st
 import pandas as pd
 import numpy as np
+import gdown
 from sklearn.metrics.pairwise import cosine_similarity
 
 st.set_page_config(page_title="📚 Book Recommender", layout="wide")
