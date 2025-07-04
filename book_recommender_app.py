@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 # st.set_page_config(page_title="📚 BookSage – Your Book Recommending Partner", layout="wide")
 # st.title("📚 **BookSage – Your Book Recommending Partner**")
-st.markdown("<h3 style='text-align: center;'>📚 <b>BookSage – Your Book Recommending Partner</b></h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center;'>📚 <b>BookSage – Your Book Recommending Partner</b></h3> 📚", unsafe_allow_html=True)
 
 
 
@@ -101,7 +101,7 @@ def recommend(book_name):
 # Streamlit UI
 # st.title("📖 Book Recommendation System")
 st.write("")
-st.markdown("<h4 style='text-align: center;'>📚 <b>Discover your next favorite read effortlessly!</b></h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center;'> <b>Discover your next favorite read effortlessly!</b></h4>", unsafe_allow_html=True)
 st.write("")
 st.write("""Our Book Recommendation System leverages the power to connect you with personalized book suggestions based on real user tastes and reading habits.  
 Dive into a world of stories tailored just for you — because the best books are the ones you haven’t read yet!
