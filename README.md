@@ -45,11 +45,10 @@ Collaborative filtering using a pivot table (books x users) and cosine similarit
 - Cold start problem for new users/items
 - Popularity bias for books with fewer ratings
 
-## Quotes & UX
-> “Books are a uniquely portable magic.” – Stephen King
 
 
-### **Streamlit Link: ** https://recommendbookapp.streamlit.app/
+> ### **Streamlit Link: **
+> > https://recommendbookapp.streamlit.app/
 
 
 
