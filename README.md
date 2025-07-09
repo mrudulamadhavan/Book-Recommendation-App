@@ -47,7 +47,7 @@ Collaborative filtering using a pivot table (books x users) and cosine similarit
 
 
 
-> ### **Streamlit Link: **
+> #### **Streamlit Link**
 > > https://recommendbookapp.streamlit.app/
 
 
