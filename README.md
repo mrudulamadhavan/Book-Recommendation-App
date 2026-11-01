@@ -9,7 +9,7 @@ Discover your next favorite read effortlessly! This Book Recommendation System l
 - Book similarity calculation using cosine similarity
 - Clean and interactive UI via Streamlit
 - Google Drive integration for dataset handling
-
+ 
 ## Dataset
 Book-Crossing Dataset with the following files:
 - `Books.csv` – Book details (title, author, image, etc.)
