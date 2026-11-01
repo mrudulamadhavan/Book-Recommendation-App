@@ -1,7 +1,6 @@
 
-# 📚 Book Recommendation System
+# 📚 BookSage 
 
-## Overview
 Discover your next favorite read effortlessly! This Book Recommendation System leverages the power of **collaborative filtering** to connect you with personalized book suggestions based on user preferences and reading history.
 
 ## Features
